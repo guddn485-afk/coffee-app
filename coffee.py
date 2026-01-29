@@ -13,11 +13,11 @@ conn = st.connection("gsheets", type=GSheetsConnection)
 
 # --- 1. 헤더 섹션 (로고 및 제목) ---
 if os.path.exists("logo.png"):
-    # 로고를 화면 너비에 맞춰 꽉 채웁니다.
-    # 만약 이미지 양옆에 빈 공간이 많다면 이미지 파일을 '자르기(Crop)' 해야 합니다.
     st.image("logo.png", use_container_width=True)
 else:
     st.markdown("<h1 style='text-align: center;'>☕ 커피-리 수거 플랫폼</h1>", unsafe_allow_html=True)
+
+st.markdown("<h3 style='text-align: center; color: gray;'>환경을 생각하는 커피박 수거 서비스</h3>", unsafe_allow_html=True)
 
 # --- 2. 상단 지표 (대시보드) ---
 try:
@@ -29,7 +29,6 @@ col1, col2, col3 = st.columns(3)
 with col1:
     st.metric("총 수거 요청", f"{len(df)}건")
 with col2:
-    # 데이터가 비어있을 경우를 대비한 처리
     if not df.empty and "수거량" in df.columns:
         total_kg = pd.to_numeric(df["수거량"]).sum()
     else:
@@ -64,10 +63,11 @@ with left_col:
 
 with right_col:
     st.subheader("📢 알림 사항")
+    # 문의 사항 항목을 삭제하고 수거 시간만 남겼습니다.
     st.info("""
-    - **수거 시간:** 24시
-   
+    - **수거 시간:** 매일 오전 10시 ~ 오후 2시
     """)
+    
     goal = 1000
     progress = min(float(total_kg / goal), 1.0)
     st.write(f"🌿 **목표 달성도 ({total_kg}kg / {goal}kg)**")
