@@ -1,7 +1,7 @@
 import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 import pandas as pd
-from datetime import datetime, timedelta, timezone # 시간 설정 추가
+from datetime import datetime, timedelta, timezone
 import os
 
 # 0. 기본 설정
@@ -11,13 +11,15 @@ st.set_page_config(page_title="커피-리 수거 플랫폼", layout="wide", page
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1Fb15MZHNoXfBhQ8OE2zPv1flPh5ktZxi46R8L7-iw50/edit"
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-# --- 1. 헤더 섹션 (로고 및 제목) ---
+# --- 1. 헤더 섹션 (로고만 표시) ---
 if os.path.exists("logo.png"):
+    # 로고를 화면 너비에 맞춰 꽉 채웁니다.
     st.image("logo.png", use_container_width=True)
 else:
+    # 로고가 없을 경우에만 제목을 텍스트로 표시합니다.
     st.markdown("<h1 style='text-align: center;'>☕ 커피-리 수거 플랫폼</h1>", unsafe_allow_html=True)
 
-st.markdown("<h3 style='text-align: center; color: gray;'>환경을 생각하는 커피박 수거 서비스</h3>", unsafe_allow_html=True)
+# "환경을 생각하는..." 문구 줄을 삭제했습니다.
 
 # --- 2. 상단 지표 (대시보드) ---
 try:
@@ -52,7 +54,7 @@ with left_col:
         
         if submit:
             if name:
-                # 한국 시간(KST) 설정: UTC+9
+                # 한국 시간(KST) 설정
                 kst = timezone(timedelta(hours=9))
                 now_kst = datetime.now(kst).strftime("%Y-%m-%d %H:%M")
                 
