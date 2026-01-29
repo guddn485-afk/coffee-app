@@ -11,15 +11,11 @@ st.set_page_config(page_title="커피-리 수거 플랫폼", layout="wide", page
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1Fb15MZHNoXfBhQ8OE2zPv1flPh5ktZxi46R8L7-iw50/edit"
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-# --- 1. 헤더 섹션 (로고만 표시) ---
+# --- 1. 헤더 섹션 (로고) ---
 if os.path.exists("logo.png"):
-    # 로고를 화면 너비에 맞춰 꽉 채웁니다.
     st.image("logo.png", use_container_width=True)
 else:
-    # 로고가 없을 경우에만 제목을 텍스트로 표시합니다.
     st.markdown("<h1 style='text-align: center;'>☕ 커피-리 수거 플랫폼</h1>", unsafe_allow_html=True)
-
-# "환경을 생각하는..." 문구 줄을 삭제했습니다.
 
 # --- 2. 상단 지표 (대시보드) ---
 try:
@@ -32,7 +28,8 @@ with col1:
     st.metric("총 수거 요청", f"{len(df)}건")
 with col2:
     if not df.empty and "수거량" in df.columns:
-        total_kg = pd.to_numeric(df["수거량"]).sum()
+        # 수거량이 숫자가 아닐 경우를 대비해 숫자로 변환 후 합산
+        total_kg = pd.to_numeric(df["수거량"], errors='coerce').sum()
     else:
         total_kg = 0
     st.metric("누적 수거량", f"{total_kg} kg")
@@ -78,10 +75,18 @@ with right_col:
     st.write(f"🌿 **목표 달성도 ({total_kg}kg / {goal}kg)**")
     st.progress(progress)
 
-# --- 4. 관리자 메뉴 ---
+# --- 4. 관리자 메뉴 (최신순 정렬 추가) ---
 st.sidebar.title("🔐 관리자 전용")
 admin_pw = st.sidebar.text_input("비밀번호", type="password")
+
 if admin_pw == "1234":
     st.divider()
-    st.subheader("📊 전체 수거 목록")
-    st.dataframe(df, use_container_width=True)
+    st.subheader("📊 전체 수거 목록 (최신순)")
+    
+    # [수정 포인트] 데이터를 최신순으로 정렬합니다.
+    if not df.empty:
+        # '요청날짜' 컬럼을 기준으로 내림차순(False) 정렬
+        df_sorted = df.sort_values(by="요청날짜", ascending=False)
+        st.dataframe(df_sorted, use_container_width=True)
+    else:
+        st.write("아직 등록된 수거 내역이 없습니다.")
