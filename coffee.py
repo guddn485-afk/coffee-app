@@ -12,17 +12,16 @@ SHEET_URL = "https://docs.google.com/spreadsheets/d/1Fb15MZHNoXfBhQ8OE2zPv1flPh5
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 # --- 1. 헤더 섹션 (로고 및 제목) ---
-# logo.png 파일이 있으면 로고를 보여주고, 없으면 이모지를 보여줍니다.
+# logo.png 파일이 있으면 로고를 보여줍니다.
 if os.path.exists("logo.png"):
     left_empty, mid, right_empty = st.columns([1, 1, 1])
     with mid:
         st.image("logo.png", width=200)
-    st.markdown("<h3 style='text-align: center;'>커피-리(Lee) 수거 플랫폼</h3>", unsafe_allow_html=True)
 else:
-    st.markdown("<h1 style='text-align: center;'>☕ 커피-리(Lee) 수거 플랫폼</h1>", unsafe_allow_html=True)
+    # 로고가 없을 경우 보여줄 대체 제목
+    st.markdown("<h1 style='text-align: center;'>☕ 커피-리 수거 플랫폼</h1>", unsafe_allow_html=True)
 
-st.markdown("<p style='text-align: center; color: gray;'>우리의 작은 실천이 깨끗한 환경을 만듭니다. 제주 커피박 자원순환 네트워크</p>", unsafe_allow_html=True)
-st.divider()
+st.markdown("<h3 style='text-align: center; color: gray;'>환경을 생각하는 커피박 수거 서비스</h3>", unsafe_allow_html=True)
 
 # --- 2. 상단 지표 (대시보드) ---
 try:
@@ -59,6 +58,8 @@ with left_col:
                 st.success(f"접수가 완료되었습니다!")
                 st.balloons()
                 st.rerun()
+            else:
+                st.error("카페 이름을 입력해 주세요.")
 
 with right_col:
     st.subheader("📢 알림 사항")
