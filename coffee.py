@@ -21,9 +21,8 @@ else:
 try:
     df = conn.read(spreadsheet=SHEET_URL, ttl=0)
     if not df.empty:
-        # 수거량 숫자 변환
         df["수거량"] = pd.to_numeric(df["수거량"], errors='coerce').fillna(0)
-except Exception as e:
+except Exception:
     df = pd.DataFrame(columns=["카페이름", "수거량", "요청날짜"])
 
 col1, col2, col3 = st.columns(3)
@@ -38,25 +37,19 @@ with col3:
 
 st.divider()
 
-# --- 3. [수정됨] 수거 트렌드 차트 (에러 방지 로직 적용) ---
+# --- 3. 수거 트렌드 차트 ---
 if not df.empty:
     st.subheader("📊 일별 수거 트렌드")
     df_chart = df.copy()
-    
-    # errors='coerce'를 써서 날짜가 아닌 데이터는 NaT(빈값)로 바꿉니다.
     df_chart['날짜_dt'] = pd.to_datetime(df_chart['요청날짜'], errors='coerce')
-    
-    # 날짜 변환에 성공한 데이터만 남깁니다.
     df_chart = df_chart.dropna(subset=['날짜_dt'])
     
     if not df_chart.empty:
         df_chart['날짜'] = df_chart['날짜_dt'].dt.date
         trend_data = df_chart.groupby('날짜')['수거량'].sum().reset_index()
         st.bar_chart(trend_data.set_index('날짜'), color="#4B2C20")
-    else:
-        st.info("차트를 그릴 수 있는 날짜 데이터가 없습니다.")
 
-# --- 4. 메인 레이아웃 (입력 폼) ---
+# --- 4. 메인 레이아웃 (입력 폼 및 알림) ---
 left_col, right_col = st.columns([1, 1])
 
 with left_col:
@@ -83,19 +76,15 @@ with right_col:
     st.subheader("📢 알림 사항")
     st.info("- **수거 시간:** 매일 오전 10시 ~ 오후 2시")
     
+    # --- [문제 해결 구간] 프로그레스 바 ---
     goal = 1000
-    progress = min(float(total_kg / goal), 1.0) if goal > 0 else 0
-    st.write(f"🌿 **목표 달성도 ({total_kg}kg / {goal}kg)**")
-    st.progress
+    # 0.0 ~ 1.0 사이의 값인지 다시 한 번 확인 (안전장치)
+    raw_ratio = total_kg / goal if goal > 0 else 0
+    progress_value = max(0.0, min(float(raw_ratio), 1.0))
+    
+    # 텍스트를 바 위에 따로 출력 (버전 충돌 방지)
+    st.write(f"🌿 **목표 달성도: {total_kg}kg / {goal}kg ({int(progress_value * 100)}%)**")
+    st.progress(progress_value)
 
-    with right_col:
-    st.subheader("📢 알림 사항")
-    st.info("- **수거 시간:** 매일 오전 10시 ~ 오후 2시")
-    
-    # 목표 달성 계산
-    goal = 1000
-    progress_value = min(float(total_kg / goal), 1.0) if goal > 0 else 0
-    
-    # 공식 문서 스타일 적용: 텍스트를 프로그레스 바 위에 바로 표시
-    progress_text = f"🌿 **목표 달성도: {total_kg}kg / {goal}kg ({int(progress_value * 100)}%)**"
-    st.progress(progress_value, text=progress_text)
+# --- 5. 관리자 메뉴 ---
+st.sidebar.title("🔐 관리자
