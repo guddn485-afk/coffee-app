@@ -87,3 +87,15 @@ with right_col:
     progress = min(float(total_kg / goal), 1.0) if goal > 0 else 0
     st.write(f"🌿 **목표 달성도 ({total_kg}kg / {goal}kg)**")
     st.progress
+
+    with right_col:
+    st.subheader("📢 알림 사항")
+    st.info("- **수거 시간:** 매일 오전 10시 ~ 오후 2시")
+    
+    # 목표 달성 계산
+    goal = 1000
+    progress_value = min(float(total_kg / goal), 1.0) if goal > 0 else 0
+    
+    # 공식 문서 스타일 적용: 텍스트를 프로그레스 바 위에 바로 표시
+    progress_text = f"🌿 **목표 달성도: {total_kg}kg / {goal}kg ({int(progress_value * 100)}%)**"
+    st.progress(progress_value, text=progress_text)
