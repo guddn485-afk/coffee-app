@@ -1,7 +1,7 @@
 import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta, timezone # 시간 설정 추가
 import os
 
 # 0. 기본 설정
@@ -52,7 +52,11 @@ with left_col:
         
         if submit:
             if name:
-                new_data = pd.DataFrame([{"카페이름": name, "수거량": qty, "요청날짜": datetime.now().strftime("%Y-%m-%d %H:%M")}])
+                # 한국 시간(KST) 설정: UTC+9
+                kst = timezone(timedelta(hours=9))
+                now_kst = datetime.now(kst).strftime("%Y-%m-%d %H:%M")
+                
+                new_data = pd.DataFrame([{"카페이름": name, "수거량": qty, "요청날짜": now_kst}])
                 updated_df = pd.concat([df, new_data], ignore_index=True)
                 conn.update(spreadsheet=SHEET_URL, data=updated_df)
                 st.success(f"접수가 완료되었습니다!")
@@ -63,13 +67,12 @@ with left_col:
 
 with right_col:
     st.subheader("📢 알림 사항")
-    # 문의 사항 항목을 삭제하고 수거 시간만 남겼습니다.
     st.info("""
     - **수거 시간:** 매일 오전 10시 ~ 오후 2시
     """)
     
     goal = 1000
-    progress = min(float(total_kg / goal), 1.0)
+    progress = min(float(total_kg / goal), 1.0) if goal > 0 else 0
     st.write(f"🌿 **목표 달성도 ({total_kg}kg / {goal}kg)**")
     st.progress(progress)
 
