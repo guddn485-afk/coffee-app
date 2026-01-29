@@ -19,8 +19,6 @@ if os.path.exists("logo.png"):
 else:
     st.markdown("<h1 style='text-align: center;'>☕ 커피-리 수거 플랫폼</h1>", unsafe_allow_html=True)
 
-st.markdown("<h3 style='text-align: center; color: gray;'>환경을 생각하는 커피박 수거 서비스</h3>", unsafe_allow_html=True)
-
 # --- 2. 상단 지표 (대시보드) ---
 try:
     df = conn.read(spreadsheet=SHEET_URL, ttl=0)
