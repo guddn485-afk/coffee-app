@@ -12,13 +12,11 @@ SHEET_URL = "https://docs.google.com/spreadsheets/d/1Fb15MZHNoXfBhQ8OE2zPv1flPh5
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 # --- 1. 헤더 섹션 (로고 및 제목) ---
-# logo.png 파일이 있으면 로고를 보여줍니다.
 if os.path.exists("logo.png"):
-    left_empty, mid, right_empty = st.columns([1, 1, 1])
-    with mid:
-        st.image("logo.png", width=200)
+    # 로고를 화면 너비에 맞춰 꽉 채웁니다.
+    # 만약 이미지 양옆에 빈 공간이 많다면 이미지 파일을 '자르기(Crop)' 해야 합니다.
+    st.image("logo.png", use_container_width=True)
 else:
-    # 로고가 없을 경우 보여줄 대체 제목
     st.markdown("<h1 style='text-align: center;'>☕ 커피-리 수거 플랫폼</h1>", unsafe_allow_html=True)
 
 st.markdown("<h3 style='text-align: center; color: gray;'>환경을 생각하는 커피박 수거 서비스</h3>", unsafe_allow_html=True)
@@ -26,17 +24,22 @@ st.markdown("<h3 style='text-align: center; color: gray;'>환경을 생각하는
 # --- 2. 상단 지표 (대시보드) ---
 try:
     df = conn.read(spreadsheet=SHEET_URL, ttl=0)
-except:
+except Exception as e:
     df = pd.DataFrame(columns=["카페이름", "수거량", "요청날짜"])
 
 col1, col2, col3 = st.columns(3)
 with col1:
     st.metric("총 수거 요청", f"{len(df)}건")
 with col2:
-    total_kg = df["수거량"].sum() if not df.empty else 0
+    # 데이터가 비어있을 경우를 대비한 처리
+    if not df.empty and "수거량" in df.columns:
+        total_kg = pd.to_numeric(df["수거량"]).sum()
+    else:
+        total_kg = 0
     st.metric("누적 수거량", f"{total_kg} kg")
 with col3:
-    st.metric("참여 카페", f"{df['카페이름'].nunique()}곳")
+    num_cafes = df['카페이름'].nunique() if not df.empty else 0
+    st.metric("참여 카페", f"{num_cafes}곳")
 
 st.divider()
 
@@ -68,7 +71,7 @@ with right_col:
     - **문의 사항:** 010-XXXX-XXXX (커피-리 팀)
     """)
     goal = 1000
-    progress = min(total_kg / goal, 1.0)
+    progress = min(float(total_kg / goal), 1.0)
     st.write(f"🌿 **목표 달성도 ({total_kg}kg / {goal}kg)**")
     st.progress(progress)
 
