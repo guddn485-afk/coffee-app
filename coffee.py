@@ -21,6 +21,7 @@ else:
 try:
     df = conn.read(spreadsheet=SHEET_URL, ttl=0)
     if not df.empty:
+        # 수거량 숫자 변환 (에러 방지)
         df["수거량"] = pd.to_numeric(df["수거량"], errors='coerce').fillna(0)
 except Exception:
     df = pd.DataFrame(columns=["카페이름", "수거량", "요청날짜"])
@@ -37,19 +38,7 @@ with col3:
 
 st.divider()
 
-# --- 3. 수거 트렌드 차트 ---
-if not df.empty:
-    st.subheader("📊 일별 수거 트렌드")
-    df_chart = df.copy()
-    df_chart['날짜_dt'] = pd.to_datetime(df_chart['요청날짜'], errors='coerce')
-    df_chart = df_chart.dropna(subset=['날짜_dt'])
-    
-    if not df_chart.empty:
-        df_chart['날짜'] = df_chart['날짜_dt'].dt.date
-        trend_data = df_chart.groupby('날짜')['수거량'].sum().reset_index()
-        st.bar_chart(trend_data.set_index('날짜'), color="#4B2C20")
-
-# --- 4. 메인 레이아웃 (입력 폼 및 알림) ---
+# --- 3. 메인 레이아웃 (입력 폼 및 알림) ---
 left_col, right_col = st.columns([1, 1])
 
 with left_col:
@@ -61,8 +50,10 @@ with left_col:
         
         if submit:
             if name:
+                # 한국 시간(KST) 설정
                 kst = timezone(timedelta(hours=9))
                 now_kst = datetime.now(kst).strftime("%Y-%m-%d %H:%M")
+                
                 new_data = pd.DataFrame([{"카페이름": name, "수거량": qty, "요청날짜": now_kst}])
                 updated_df = pd.concat([df, new_data], ignore_index=True)
                 conn.update(spreadsheet=SHEET_URL, data=updated_df)
@@ -76,15 +67,35 @@ with right_col:
     st.subheader("📢 알림 사항")
     st.info("- **수거 시간:** 매일 오전 10시 ~ 오후 2시")
     
-    # --- [문제 해결 구간] 프로그레스 바 ---
+    # 목표 달성도 (안전한 계산 방식)
     goal = 1000
-    # 0.0 ~ 1.0 사이의 값인지 다시 한 번 확인 (안전장치)
-    raw_ratio = total_kg / goal if goal > 0 else 0
-    progress_value = max(0.0, min(float(raw_ratio), 1.0))
+    progress_ratio = total_kg / goal if goal > 0 else 0
+    progress_value = max(0.0, min(float(progress_ratio), 1.0)) # 0.0~1.0 사이로 강제 고정
     
-    # 텍스트를 바 위에 따로 출력 (버전 충돌 방지)
     st.write(f"🌿 **목표 달성도: {total_kg}kg / {goal}kg ({int(progress_value * 100)}%)**")
     st.progress(progress_value)
 
-# --- 5. 관리자 메뉴 ---
-st.sidebar.title("🔐 관리자
+# --- 4. 관리자 메뉴 (데이터 수정/삭제 기능은 유지) ---
+st.sidebar.title("🔐 관리자 전용")
+admin_pw = st.sidebar.text_input("비밀번호", type="password")
+
+if admin_pw == "1234":
+    st.divider()
+    st.subheader("⚙️ 데이터 관리 (수정 및 삭제)")
+    st.write("💡 표에서 내용을 수정하거나 행을 선택해 지운 후 아래 버튼을 누르세요.")
+    
+    # 최신순으로 보여주되 편집 가능하게 설정
+    edited_df = st.data_editor(
+        df, 
+        num_rows="dynamic", 
+        use_container_width=True,
+        key="data_editor"
+    )
+    
+    if st.button("💾 변경사항 저장하기"):
+        try:
+            conn.update(spreadsheet=SHEET_URL, data=edited_df)
+            st.success("구글 시트에 성공적으로 저장되었습니다!")
+            st.rerun()
+        except Exception as e:
+            st.error(f"저장 중 오류가 발생했습니다. 다시 시도해 주세요.")
