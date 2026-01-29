@@ -65,8 +65,8 @@ with left_col:
 with right_col:
     st.subheader("📢 알림 사항")
     st.info("""
-    - **수거 시간:** 매일 오전 10시 ~ 오후 2시
-    - **문의 사항:** 010-XXXX-XXXX (커피-리 팀)
+    - **수거 시간:** 24시
+   
     """)
     goal = 1000
     progress = min(float(total_kg / goal), 1.0)
