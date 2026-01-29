@@ -2,49 +2,46 @@ import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 from datetime import datetime
+import os
 
-st.set_page_config(page_title="커피박 수거 플랫폼", layout="wide", page_icon="☕")
+# 0. 기본 설정
+st.set_page_config(page_title="커피-리 수거 플랫폼", layout="wide", page_icon="☕")
 
-
+# 구글 시트 연결
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1Fb15MZHNoXfBhQ8OE2zPv1flPh5ktZxi46R8L7-iw50/edit"
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-
-
-try:
-   
+# --- 1. 헤더 섹션 (로고 및 제목) ---
+# logo.png 파일이 있으면 로고를 보여주고, 없으면 이모지를 보여줍니다.
+if os.path.exists("logo.png"):
     left_empty, mid, right_empty = st.columns([1, 1, 1])
     with mid:
-        st.image("logo.png", width=200) 
-except:
-    
-    st.title("☕")
+        st.image("logo.png", width=200)
+    st.markdown("<h3 style='text-align: center;'>커피-리(Lee) 수거 플랫폼</h3>", unsafe_allow_html=True)
+else:
+    st.markdown("<h1 style='text-align: center;'>☕ 커피-리(Lee) 수거 플랫폼</h1>", unsafe_allow_html=True)
 
-st.markdown("<h1 style='text-align: center;'>커피-리(Lee) 수거 플랫폼</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: gray;'>우리의 작은 실천이 깨끗한 환경을 만듭니다.</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: gray;'>우리의 작은 실천이 깨끗한 환경을 만듭니다. 제주 커피박 자원순환 네트워크</p>", unsafe_allow_html=True)
+st.divider()
 
-st.title("☕ 커피-리(Lee) 수거 플랫폼")
-st.caption("우리의 작은 실천이 깨끗한 환경을 만듭니다. 제주 커피박 자원순환 네트워크")
-
-
+# --- 2. 상단 지표 (대시보드) ---
 try:
     df = conn.read(spreadsheet=SHEET_URL, ttl=0)
 except:
     df = pd.DataFrame(columns=["카페이름", "수거량", "요청날짜"])
 
-# 2. 상단 지표 (대시보드 느낌)
-st.divider()
 col1, col2, col3 = st.columns(3)
 with col1:
     st.metric("총 수거 요청", f"{len(df)}건")
 with col2:
     total_kg = df["수거량"].sum() if not df.empty else 0
-    st.metric("누적 수거량", f"{total_kg} kg", delta="▲ 계속 증가 중")
+    st.metric("누적 수거량", f"{total_kg} kg")
 with col3:
     st.metric("참여 카페", f"{df['카페이름'].nunique()}곳")
 
-# 3. 메인 레이아웃 (좌측: 입력창 / 우측: 안내문)
 st.divider()
+
+# --- 3. 메인 레이아웃 ---
 left_col, right_col = st.columns([1, 1])
 
 with left_col:
@@ -59,26 +56,22 @@ with left_col:
                 new_data = pd.DataFrame([{"카페이름": name, "수거량": qty, "요청날짜": datetime.now().strftime("%Y-%m-%d %H:%M")}])
                 updated_df = pd.concat([df, new_data], ignore_index=True)
                 conn.update(spreadsheet=SHEET_URL, data=updated_df)
-                st.success(f"감사합니다! {name} 사장님, 접수가 완료되었습니다.")
+                st.success(f"접수가 완료되었습니다!")
                 st.balloons()
                 st.rerun()
-            else:
-                st.warning("카페 이름을 입력해 주세요!")
 
 with right_col:
     st.subheader("📢 알림 사항")
     st.info("""
     - **수거 시간:** 매일 오전 10시 ~ 오후 2시
-    - **주의 사항:** 이물질이 섞이지 않도록 주의해 주세요.
     - **문의 사항:** 010-XXXX-XXXX (커피-리 팀)
     """)
-    # 진행 상황바 (목표 수거량 1000kg 달성용)
     goal = 1000
     progress = min(total_kg / goal, 1.0)
-    st.write(f"🌿 **목표 달성도 (현재 {total_kg}kg / 목표 {goal}kg)**")
+    st.write(f"🌿 **목표 달성도 ({total_kg}kg / {goal}kg)**")
     st.progress(progress)
 
-# 4. 관리자 메뉴 (하단에 숨김)
+# --- 4. 관리자 메뉴 ---
 st.sidebar.title("🔐 관리자 전용")
 admin_pw = st.sidebar.text_input("비밀번호", type="password")
 if admin_pw == "1234":
